@@ -4,16 +4,20 @@
   <meta charset="UTF-8">
   <title>🍎 Obst Obsession 🍇</title>
   <style>
-    body {
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #f0f0f0;
       font-family: sans-serif;
       text-align: center;
-      background: #f0f0f0;
-      margin: 0;
-      padding: 20px;
+      user-select: none;
+      -webkit-user-select: none;
+      -ms-user-select: none;
     }
 
     h1 {
-      margin-bottom: 10px;
+      margin: 20px 0 10px;
+      font-size: 2em;
     }
 
     table {
@@ -22,52 +26,39 @@
     }
 
     td {
-      width: 60px;
-      height: 60px;
+      width: 50px;
+      height: 50px;
       border: 1px solid #333;
       text-align: center;
       vertical-align: middle;
-      font-size: 32px;
+      font-size: 28px;
       cursor: pointer;
       user-select: none;
+      -webkit-user-select: none;
+      -ms-user-select: none;
     }
 
-    .fixed {
+    td.fixed {
       background: #d0eaff;
       cursor: default;
     }
 
-    button, select {
+    button {
       margin: 10px;
       padding: 10px 20px;
       font-size: 16px;
       cursor: pointer;
     }
 
-    /* Responsive Anpassung für kleinere Bildschirme */
     @media (max-width: 600px) {
       td {
-        width: 45px;
-        height: 45px;
-        font-size: 26px;
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
       }
 
-      button, select {
-        font-size: 14px;
-        padding: 8px 16px;
-      }
-    }
-
-    @media (max-width: 400px) {
-      td {
-        width: 38px;
-        height: 38px;
-        font-size: 22px;
-      }
-
-      button, select {
-        font-size: 13px;
-        padding: 6px 12px;
+      h1 {
+        font-size: 1.6em;
       }
     }
   </style>
@@ -96,11 +87,13 @@
         if (fixedCells[key]) {
           cell.textContent = fixedCells[key];
           cell.className = 'fixed';
+          cell.onmousedown = () => false;
         } else {
           cell.onclick = () => {
             let current = fruits.indexOf(cell.textContent);
             cell.textContent = fruits[(current + 1) % fruits.length];
           };
+          cell.onmousedown = () => false;
         }
       }
     }
@@ -111,9 +104,7 @@
     let valid = true;
 
     for (let i = 0; i < 8; i++) {
-      let rowCounts = {};
-      let colCounts = {};
-
+      let rowCounts = {}, colCounts = {};
       for (let j = 0; j < 8; j++) {
         const rowFruit = table.rows[i].cells[j].textContent;
         const colFruit = table.rows[j].cells[i].textContent;
@@ -126,13 +117,12 @@
           if (colFruit !== "" && colFruit === table.rows[j+1].cells[i].textContent) valid = false;
         }
       }
-
       for (let fruit of fruits.slice(1)) {
         if (rowCounts[fruit] !== 2 || colCounts[fruit] !== 2) valid = false;
       }
     }
 
-    alert(valid ? "✅ Alles korrekt!" : "❌ Falsch gemach 😭");
+    alert(valid ? "✅ Alles korrekt, du hast gewonnen!" : "❌ Da sind noch Fehler drin!");
   }
 
   function generateSolvablePuzzle() {
@@ -157,18 +147,15 @@
 
   function placeRandomStartFields() {
     let placed = 0;
-    const difficulty = 25; // Nur "leicht" Modus mit 25 Vorgaben
-    while (placed < difficulty) {
+    const total = 25;
+    while (placed < total) {
       let r = Math.floor(Math.random() * 8);
       let c = Math.floor(Math.random() * 8);
       let key = `${r},${c}`;
       if (fixedCells[key]) continue;
 
       let fruit = fruits.slice(1)[Math.floor(Math.random() * 4)];
-      let neighbours = [
-        `${r-1},${c}`, `${r+1},${c}`,
-        `${r},${c-1}`, `${r},${c+1}`
-      ];
+      let neighbours = [`${r-1},${c}`, `${r+1},${c}`, `${r},${c-1}`, `${r},${c+1}`];
       if (neighbours.some(n => fixedCells[n] === fruit)) continue;
 
       fixedCells[key] = fruit;
@@ -191,6 +178,7 @@
     function backtrack(r, c) {
       if (c === 8) { c = 0; r++; if (r === 8) return true; }
       if (grid[r][c] !== "") return backtrack(r, c+1);
+
       for (let fruit of fruits.slice(1)) {
         if (isValid(r, c, fruit)) {
           grid[r][c] = fruit;
@@ -201,7 +189,7 @@
       return false;
     }
 
-    return backtrack(0, 0);
+    return backtrack(0,0);
   }
 
   function resetGame() {
@@ -210,6 +198,7 @@
   }
 
   resetGame();
+
 </script>
 
 </body>
