@@ -26,6 +26,7 @@
       vertical-align: middle;
       font-size: 32px;
       cursor: pointer;
+      transition: background 0.3s;
     }
     .fixed {
       background: #d0eaff;
@@ -36,6 +37,27 @@
       padding: 10px 20px;
       font-size: 16px;
     }
+    #victory {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      font-size: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+    #victory.show {
+      opacity: 1;
+      pointer-events: all;
+    }
   </style>
 </head>
 <body>
@@ -44,15 +66,17 @@
 
 <label for="difficulty">Schwierigkeit:</label>
 <select id="difficulty" onchange="resetGame()">
-  <option value="16">Leicht</option>
-  <option value="12" selected>Mittel</option>
-  <option value="8">Schwer</option>
+  <option value="20">Leicht (20 Vorgaben)</option>
+  <option value="16" selected>Mittel (16 Vorgaben)</option>
+  <option value="12">Schwer (12 Vorgaben)</option>
 </select>
 
 <table id="grid"></table>
 
 <button onclick="checkSolution()">✅ Lösung prüfen</button>
 <button onclick="resetGame()">🔄 Neues Spiel</button>
+
+<div id="victory">🎉 Du hast gewonnen! 🎉</div>
 
 <script>
   const fruits = ["", "🍎", "🍌", "🍈", "🍇"];
@@ -105,7 +129,14 @@
       }
     }
 
-    alert(valid ? "✅ Alles korrekt!" : "❌ Noch Fehler drin!");
+    if (valid) {
+      document.getElementById("victory").classList.add("show");
+      setTimeout(() => {
+        document.getElementById("victory").classList.remove("show");
+      }, 3000);
+    } else {
+      alert("❌ Noch Fehler drin!");
+    }
   }
 
   function generateSolvablePuzzle() {
@@ -131,20 +162,30 @@
   function placeRandomStartFields() {
     let placed = 0;
     let difficulty = parseInt(document.getElementById("difficulty").value);
+    let grid = Array.from({ length: 8 }, () => Array(8).fill(""));
+
     while (placed < difficulty) {
       let r = Math.floor(Math.random() * 8);
       let c = Math.floor(Math.random() * 8);
       let key = `${r},${c}`;
       if (fixedCells[key]) continue;
 
-      let fruit = fruits.slice(1)[Math.floor(Math.random() * 4)];
-      let neighbours = [
-        `${r-1},${c}`, `${r+1},${c}`,
-        `${r},${c-1}`, `${r},${c+1}`
-      ];
-      if (neighbours.some(n => fixedCells[n] === fruit)) continue;
+      let possibleFruits = fruits.slice(1).filter(fruit => {
+        if ((r > 0 && grid[r-1][c] === fruit) ||
+            (r < 7 && grid[r+1][c] === fruit) ||
+            (c > 0 && grid[r][c-1] === fruit) ||
+            (c < 7 && grid[r][c+1] === fruit)) return false;
+        let rowCount = grid[r].filter(f => f === fruit).length;
+        let colCount = grid.map(row => row[c]).filter(f => f === fruit).length;
+        if (rowCount >= 2 || colCount >= 2) return false;
+        return true;
+      });
 
+      if (possibleFruits.length === 0) continue;
+
+      let fruit = possibleFruits[Math.floor(Math.random() * possibleFruits.length)];
       fixedCells[key] = fruit;
+      grid[r][c] = fruit;
       placed++;
     }
   }
@@ -154,12 +195,10 @@
       let rowCount = grid[r].filter(f => f === fruit).length;
       let colCount = grid.map(row => row[c]).filter(f => f === fruit).length;
       if (rowCount >= 2 || colCount >= 2) return false;
-
       if (r > 0 && grid[r-1][c] === fruit) return false;
       if (r < 7 && grid[r+1][c] === fruit) return false;
       if (c > 0 && grid[r][c-1] === fruit) return false;
       if (c < 7 && grid[r][c+1] === fruit) return false;
-
       return true;
     }
 
