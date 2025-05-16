@@ -2,63 +2,59 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>🍎 Obst Obsession 🍇</title>
+  <title>Obst Obsession</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #f0f0f0;
+    body {
       font-family: sans-serif;
       text-align: center;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 20px;
       user-select: none;
-      -webkit-user-select: none;
-      -ms-user-select: none;
     }
-
     h1 {
-      margin: 20px 0 10px;
-      font-size: 2em;
+      margin-bottom: 10px;
     }
-
     table {
       border-collapse: collapse;
       margin: 20px auto;
     }
-
     td {
-      width: 50px;
-      height: 50px;
+      width: 65px;
+      height: 65px;
       border: 1px solid #333;
       text-align: center;
       vertical-align: middle;
-      font-size: 28px;
+      font-size: 36px;
       cursor: pointer;
       user-select: none;
-      -webkit-user-select: none;
-      -ms-user-select: none;
     }
-
-    td.fixed {
+    .fixed {
       background: #d0eaff;
       cursor: default;
     }
-
     button {
       margin: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
+      padding: 12px 24px;
+      font-size: 18px;
       cursor: pointer;
     }
-
-    @media (max-width: 600px) {
+    @media (max-width: 800px) {
       td {
-        width: 40px;
-        height: 40px;
-        font-size: 24px;
+        width: 50px;
+        height: 50px;
+        font-size: 30px;
       }
-
-      h1 {
-        font-size: 1.6em;
+    }
+    @media (max-width: 500px) {
+      td {
+        width: 42px;
+        height: 42px;
+        font-size: 26px;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
       }
     }
   </style>
@@ -84,16 +80,15 @@
       for (let c = 0; c < 8; c++) {
         const cell = row.insertCell();
         const key = `${r},${c}`;
+        cell.onmousedown = (e) => e.preventDefault(); // Markieren verhindern
         if (fixedCells[key]) {
           cell.textContent = fixedCells[key];
           cell.className = 'fixed';
-          cell.onmousedown = () => false;
         } else {
           cell.onclick = () => {
             let current = fruits.indexOf(cell.textContent);
             cell.textContent = fruits[(current + 1) % fruits.length];
           };
-          cell.onmousedown = () => false;
         }
       }
     }
@@ -121,8 +116,7 @@
         if (rowCounts[fruit] !== 2 || colCounts[fruit] !== 2) valid = false;
       }
     }
-
-    alert(valid ? "✅ Alles korrekt, du hast gewonnen!" : "❌ Da sind noch Fehler drin!");
+    alert(valid ? "✅ Alles korrekt!" : "❌ Noch Fehler drin!");
   }
 
   function generateSolvablePuzzle() {
@@ -130,37 +124,44 @@
     while (true) {
       fixedCells = {};
       attempts++;
-      placeRandomStartFields();
-      let grid = Array.from({ length: 8 }, () => Array(8).fill(""));
-
-      for (let key in fixedCells) {
-        const [r, c] = key.split(",").map(Number);
-        grid[r][c] = fixedCells[key];
-      }
-
-      if (solve(grid)) {
-        console.log(`Lösbares Puzzle nach ${attempts} Versuchen gefunden.`);
-        break;
+      if (placeRandomStartFields()) {
+        let grid = Array.from({ length: 8 }, () => Array(8).fill(""));
+        for (let key in fixedCells) {
+          const [r, c] = key.split(",").map(Number);
+          grid[r][c] = fixedCells[key];
+        }
+        if (solve(grid)) {
+          console.log(`Lösbares Puzzle nach ${attempts} Versuchen gefunden.`);
+          break;
+        }
       }
     }
   }
 
   function placeRandomStartFields() {
     let placed = 0;
-    const total = 25;
-    while (placed < total) {
+    while (placed < 25) {
       let r = Math.floor(Math.random() * 8);
       let c = Math.floor(Math.random() * 8);
       let key = `${r},${c}`;
       if (fixedCells[key]) continue;
 
       let fruit = fruits.slice(1)[Math.floor(Math.random() * 4)];
-      let neighbours = [`${r-1},${c}`, `${r+1},${c}`, `${r},${c-1}`, `${r},${c+1}`];
+
+      let neighbours = [
+        `${r-1},${c}`, `${r+1},${c}`,
+        `${r},${c-1}`, `${r},${c+1}`
+      ];
       if (neighbours.some(n => fixedCells[n] === fruit)) continue;
+
+      let rowCount = Object.keys(fixedCells).filter(k => k.startsWith(r+",") && fixedCells[k] === fruit).length;
+      let colCount = Object.keys(fixedCells).filter(k => k.endsWith(","+c) && fixedCells[k] === fruit).length;
+      if (rowCount >= 2 || colCount >= 2) continue;
 
       fixedCells[key] = fruit;
       placed++;
     }
+    return true;
   }
 
   function solve(grid) {
@@ -188,7 +189,6 @@
       }
       return false;
     }
-
     return backtrack(0,0);
   }
 
