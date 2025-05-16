@@ -1,69 +1,75 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Obst Obsession</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      background: #f0f0f0;
-      margin: 0;
-      padding: 20px;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-    }
-    h1 {
-      margin-bottom: 10px;
-    }
-    table {
-      border-collapse: collapse;
-      margin: 20px auto;
-    }
+<meta charset="UTF-8">
+<title>🍎 Obst Obsession 🍇</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #f0f0f0;
+    font-family: sans-serif;
+    text-align: center;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+
+  h1 {
+    margin: 20px 0 10px;
+    font-size: 32px;
+  }
+
+  table {
+    border-collapse: collapse;
+    margin: 20px auto;
+    table-layout: fixed;
+  }
+
+  td {
+    width: 50px;
+    height: 50px;
+    border: 1px solid #333;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 36px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .fixed {
+    background: #d0eaff;
+    cursor: default;
+  }
+
+  button {
+    margin: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #999;
+    background: #fff;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #eee;
+  }
+
+  @media (max-width: 600px) {
     td {
-      width: 65px;
-      height: 65px;
-      border: 1px solid #333;
-      text-align: center;
-      vertical-align: middle;
-      font-size: 36px;
-      cursor: pointer;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
+      width: 60px;
+      height: 60px;
+      font-size: 40px;
     }
-    .fixed {
-      background: #d0eaff;
-      cursor: default;
-    }
+
     button {
-      margin: 10px;
       padding: 12px 24px;
       font-size: 18px;
-      cursor: pointer;
     }
-    @media (max-width: 800px) {
-      td {
-        width: 50px;
-        height: 50px;
-        font-size: 30px;
-      }
-    }
-    @media (max-width: 500px) {
-      td {
-        width: 42px;
-        height: 42px;
-        font-size: 26px;
-      }
-      button {
-        padding: 10px 20px;
-        font-size: 16px;
-      }
-    }
-  </style>
+  }
+
+</style>
 </head>
 <body>
 
@@ -86,12 +92,6 @@
       for (let c = 0; c < 8; c++) {
         const cell = row.insertCell();
         const key = `${r},${c}`;
-
-        // Markieren und Kontextmenü verhindern
-        cell.onmousedown = (e) => e.preventDefault();
-        cell.onselectstart = () => false;
-        cell.oncontextmenu = () => false;
-
         if (fixedCells[key]) {
           cell.textContent = fixedCells[key];
           cell.className = 'fixed';
@@ -101,6 +101,7 @@
             cell.textContent = fruits[(current + 1) % fruits.length];
           };
         }
+        cell.onmousedown = e => e.preventDefault();  // kein Markieren
       }
     }
   }
@@ -110,7 +111,9 @@
     let valid = true;
 
     for (let i = 0; i < 8; i++) {
-      let rowCounts = {}, colCounts = {};
+      let rowCounts = {};
+      let colCounts = {};
+
       for (let j = 0; j < 8; j++) {
         const rowFruit = table.rows[i].cells[j].textContent;
         const colFruit = table.rows[j].cells[i].textContent;
@@ -123,10 +126,12 @@
           if (colFruit !== "" && colFruit === table.rows[j+1].cells[i].textContent) valid = false;
         }
       }
+
       for (let fruit of fruits.slice(1)) {
         if (rowCounts[fruit] !== 2 || colCounts[fruit] !== 2) valid = false;
       }
     }
+
     alert(valid ? "✅ Alles korrekt!" : "❌ Noch Fehler drin!");
   }
 
@@ -135,16 +140,17 @@
     while (true) {
       fixedCells = {};
       attempts++;
-      if (placeRandomStartFields()) {
-        let grid = Array.from({ length: 8 }, () => Array(8).fill(""));
-        for (let key in fixedCells) {
-          const [r, c] = key.split(",").map(Number);
-          grid[r][c] = fixedCells[key];
-        }
-        if (solve(grid)) {
-          console.log(`Lösbares Puzzle nach ${attempts} Versuchen gefunden.`);
-          break;
-        }
+      placeRandomStartFields();
+      let grid = Array.from({ length: 8 }, () => Array(8).fill(""));
+
+      for (let key in fixedCells) {
+        const [r, c] = key.split(",").map(Number);
+        grid[r][c] = fixedCells[key];
+      }
+
+      if (solve(grid)) {
+        console.log(`Lösbares Puzzle nach ${attempts} Versuchen gefunden.`);
+        break;
       }
     }
   }
@@ -164,14 +170,9 @@
       ];
       if (neighbours.some(n => fixedCells[n] === fruit)) continue;
 
-      let rowCount = Object.keys(fixedCells).filter(k => k.startsWith(r+",") && fixedCells[k] === fruit).length;
-      let colCount = Object.keys(fixedCells).filter(k => k.endsWith(","+c) && fixedCells[k] === fruit).length;
-      if (rowCount >= 2 || colCount >= 2) continue;
-
       fixedCells[key] = fruit;
       placed++;
     }
-    return true;
   }
 
   function solve(grid) {
@@ -179,15 +180,20 @@
       let rowCount = grid[r].filter(f => f === fruit).length;
       let colCount = grid.map(row => row[c]).filter(f => f === fruit).length;
       if (rowCount >= 2 || colCount >= 2) return false;
+
       if (r > 0 && grid[r-1][c] === fruit) return false;
       if (r < 7 && grid[r+1][c] === fruit) return false;
       if (c > 0 && grid[r][c-1] === fruit) return false;
       if (c < 7 && grid[r][c+1] === fruit) return false;
+
       return true;
     }
 
     function backtrack(r, c) {
-      if (c === 8) { c = 0; r++; if (r === 8) return true; }
+      if (c === 8) {
+        c = 0; r++;
+        if (r === 8) return true;
+      }
       if (grid[r][c] !== "") return backtrack(r, c+1);
 
       for (let fruit of fruits.slice(1)) {
@@ -199,6 +205,7 @@
       }
       return false;
     }
+
     return backtrack(0,0);
   }
 
