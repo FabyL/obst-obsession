@@ -2,14 +2,14 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>🍎 Obst Obsession mit Proof Solver</title>
+  <title>🍎 Obst Obsession mit Proof Solver & Schwierigkeitsgrad</title>
   <style>
     body { font-family: sans-serif; text-align: center; background: #f0f0f0; padding: 20px; }
     h1 { margin-bottom: 10px; }
     table { border-collapse: collapse; margin: 20px auto; }
     td { width: 60px; height: 60px; border: 1px solid #333; text-align: center; vertical-align: middle; font-size: 32px; cursor: pointer; transition: background 0.3s; }
     .fixed { background: #d0eaff; cursor: default; }
-    button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+    button, select { margin: 10px; padding: 10px 20px; font-size: 16px; }
     #victory { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); color:#fff; font-size: 48px; display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
     #victory.show { opacity: 1; pointer-events: all; }
   </style>
@@ -17,10 +17,20 @@
 <body>
 
 <h1>🍎 Obst Obsession 🍇</h1>
+
+<label for="difficulty">Schwierigkeit:</label>
+<select id="difficulty" onchange="resetGame()">
+  <option value="25">Leicht</option>
+  <option value="16" selected>Mittel</option>
+  <option value="8">Schwer</option>
+</select>
+
 <table id="grid"></table>
+
 <button onclick="checkSolution()">✅ Lösung prüfen</button>
 <button onclick="resetGame()">🔄 Neues Spiel</button>
 <button onclick="proofTest()">🧠 Proof-Test starten</button>
+
 <div id="victory">🎉 Du hast gewonnen! 🎉</div>
 
 <script>
@@ -91,7 +101,7 @@ function generateSolvablePuzzle() {
 }
 
 function placeRandomStartFields() {
-  let placed = 0, difficulty = 25;
+  let placed = 0, difficulty = parseInt(document.getElementById("difficulty").value);
   let grid = Array.from({ length: 8 }, () => Array(8).fill(""));
   while (placed < difficulty) {
     let r = Math.floor(Math.random() * 8);
