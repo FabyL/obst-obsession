@@ -1,221 +1,335 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 <title>🍎 Obst Obsession 🍇</title>
 <style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: #f0f0f0;
-    font-family: sans-serif;
+  /* Grund-Reset & Body */
+  body {
+    font-family: Arial, sans-serif;
     text-align: center;
-    user-select: none;
+    margin: 0; padding: 0 0 2rem 0;
+    background: #fafafa;
+    -webkit-touch-callout: none;
     -webkit-user-select: none;
-    touch-action: manipulation;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
   }
-
   h1 {
-    margin: 20px 0 10px;
-    font-size: 32px;
+    margin: 1rem 0;
+    font-weight: 900;
+    font-size: 1.8rem;
   }
 
-  table {
+  /* Spielfeld Tabelle */
+  #board {
     border-collapse: collapse;
-    margin: 20px auto;
-    table-layout: fixed;
+    margin: 0 auto 1.5rem auto;
+    width: 90vmin;
+    height: 90vmin;
+    max-width: 90vmin;
+    max-height: 90vmin;
+    aspect-ratio: 1 / 1;
+    user-select: none;
   }
-
-  td {
-    width: 50px;
-    height: 50px;
-    border: 1px solid #333;
+  #board td {
+    border: 2px solid #555;
+    font-size: 4vmin;
     text-align: center;
     vertical-align: middle;
-    font-size: 36px;
     cursor: pointer;
-    touch-action: manipulation;
+    background: #eee;
+    user-select: none;
+    width: 12.5%;
+    height: 12.5%;
+    max-width: 60px;
+    max-height: 60px;
+    line-height: 1;
   }
-
-  .fixed {
-    background: #d0eaff;
+  #board td {
+  border: 2px solid #555;
+}
+  /* Vorgaben */
+  #board td.prefilled {
+    background: #cce5ff;
     cursor: default;
   }
-
-  button {
-    margin: 10px;
-    padding: 10px 20px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: 1px solid #999;
-    background: #fff;
+  /* Editierbare Zellen haben Zeigefinger-Cursor */
+  #board td.editable {
     cursor: pointer;
   }
 
-  button:hover {
-    background: #eee;
+  /* Buttons */
+  button {
+    font-size: 1rem;
+    padding: 0.4rem 1.2rem;
+    margin: 0 0.5rem;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    user-select: none;
+  }
+  button:focus {
+    outline: 2px solid #007bff;
+  }
+  #checkBtn {
+    background-color: #4CAF50;
+    color: white;
+  }
+  #newBtn {
+    background-color: #87ceeb;
+    color: black;
   }
 
+  /* Keine Markierung erlauben auf Safari auch für Bilder */
+  #board td img {
+    -webkit-user-drag: none;
+    user-drag: none;
+    pointer-events: none;
+  }
+
+  /* Responsive Text und Layout */
   @media (max-width: 600px) {
-    td {
-      width: 60px;
-      height: 60px;
-      font-size: 40px;
+    h1 {
+      font-size: 1.4rem;
     }
-
+    #board td {
+      font-size: 6vw;
+      max-width: none;
+      max-height: none;
+    }
     button {
-      padding: 12px 24px;
-      font-size: 18px;
+      font-size: 1.1rem;
+      padding: 0.6rem 1.4rem;
     }
   }
-
 </style>
 </head>
 <body>
-
 <h1>🍎 Obst Obsession 🍇</h1>
-
-<table id="grid"></table>
-
-<button onclick="checkSolution()">✅ Lösung prüfen</button>
-<button onclick="resetGame()">🔄 Neues Spiel</button>
+<table id="board" role="grid" aria-label="Obst Obsession Spielfeld" aria-live="polite"></table>
+<div>
+  <button id="checkBtn" aria-label="Lösung prüfen">✅ Lösung prüfen</button>
+  <button id="newBtn" aria-label="Neues Spiel starten">🔄 Neues Spiel</button>
+</div>
 
 <script>
-  const fruits = ["", "🍎", "🍌", "🍈", "🍇"];
-  let fixedCells = {};
+(() => {
+  const size = 8; // 8x8 Raster
+  const fruits = ["", "🍎", "🍌", "🍈", "🍇"]; // "" = leer, dann 4 Früchte
+  const fruitCount = fruits.length - 1;
+  const maxPrefilled = 25;
 
-  function createGrid() {
-    const table = document.getElementById("grid");
-    table.innerHTML = "";
-    for (let r = 0; r < 8; r++) {
-      const row = table.insertRow();
-      for (let c = 0; c < 8; c++) {
-        const cell = row.insertCell();
-        const key = `${r},${c}`;
-        if (fixedCells[key]) {
-          cell.textContent = fixedCells[key];
-          cell.className = 'fixed';
+  let board = []; // 2D Array 8x8 mit Zahlen 0-4
+  let prefilled = []; // 2D Array bool ob vorgegeben
+
+  const boardEl = document.getElementById("board");
+  const checkBtn = document.getElementById("checkBtn");
+  const newBtn = document.getElementById("newBtn");
+
+  // Hilfsfunktion: Erzeuge leeres Array
+  function make2DArray(val = 0) {
+    return Array.from({length: size}, () => Array(size).fill(val));
+  }
+
+  // Anzeigen des Boards
+  function renderBoard() {
+    boardEl.innerHTML = "";
+    for (let r = 0; r < size; r++) {
+      const tr = document.createElement("tr");
+      for (let c = 0; c < size; c++) {
+        const td = document.createElement("td");
+        td.setAttribute("role", "gridcell");
+        td.setAttribute("tabindex", prefilled[r][c] ? "-1" : "0");
+        td.dataset.r = r;
+        td.dataset.c = c;
+        const val = board[r][c];
+        td.textContent = fruits[val];
+        if (prefilled[r][c]) {
+          td.classList.add("prefilled");
+          td.setAttribute("aria-readonly", "true");
         } else {
-          cell.onclick = () => {
-            let current = fruits.indexOf(cell.textContent);
-            cell.textContent = fruits[(current + 1) % fruits.length];
-          };
+          td.classList.add("editable");
+          td.setAttribute("aria-label", "Leeres Feld, tippen zum ändern");
         }
-        cell.onmousedown = e => e.preventDefault();  // kein Markieren
+        tr.appendChild(td);
       }
+      boardEl.appendChild(tr);
     }
   }
 
-  function checkSolution() {
-    const table = document.getElementById("grid");
-    let valid = true;
-
-    for (let i = 0; i < 8; i++) {
-      let rowCounts = {};
-      let colCounts = {};
-
-      for (let j = 0; j < 8; j++) {
-        const rowFruit = table.rows[i].cells[j].textContent;
-        const colFruit = table.rows[j].cells[i].textContent;
-
-        rowCounts[rowFruit] = (rowCounts[rowFruit] || 0) + 1;
-        colCounts[colFruit] = (colCounts[colFruit] || 0) + 1;
-
-        if (j < 7) {
-          if (rowFruit !== "" && rowFruit === table.rows[i].cells[j+1].textContent) valid = false;
-          if (colFruit !== "" && colFruit === table.rows[j+1].cells[i].textContent) valid = false;
+  // Prüfen ob gültig: Keine doppelten Früchte in Reihe & Spalte & Box (2x2)
+  function isValidBoard(bd) {
+    // Check Reihen & Spalten
+    for(let i=0; i<size; i++) {
+      const rowFruits = new Set();
+      const colFruits = new Set();
+      for(let j=0; j<size; j++) {
+        let rVal = bd[i][j];
+        if(rVal !== 0) {
+          if(rowFruits.has(rVal)) return false;
+          rowFruits.add(rVal);
+        }
+        let cVal = bd[j][i];
+        if(cVal !== 0) {
+          if(colFruits.has(cVal)) return false;
+          colFruits.add(cVal);
         }
       }
-
-      for (let fruit of fruits.slice(1)) {
-        if (rowCounts[fruit] !== 2 || colCounts[fruit] !== 2) valid = false;
-      }
     }
-
-    alert(valid ? "✅ Alles korrekt!" : "❌ Noch Fehler drin!");
-  }
-
-  function generateSolvablePuzzle() {
-    let attempts = 0;
-    while (true) {
-      fixedCells = {};
-      attempts++;
-      placeRandomStartFields();
-      let grid = Array.from({ length: 8 }, () => Array(8).fill(""));
-
-      for (let key in fixedCells) {
-        const [r, c] = key.split(",").map(Number);
-        grid[r][c] = fixedCells[key];
-      }
-
-      if (solve(grid)) {
-        console.log(`Lösbares Puzzle nach ${attempts} Versuchen gefunden.`);
-        break;
-      }
-    }
-  }
-
-  function placeRandomStartFields() {
-    let placed = 0;
-    while (placed < 25) {
-      let r = Math.floor(Math.random() * 8);
-      let c = Math.floor(Math.random() * 8);
-      let key = `${r},${c}`;
-      if (fixedCells[key]) continue;
-
-      let fruit = fruits.slice(1)[Math.floor(Math.random() * 4)];
-      let neighbours = [
-        `${r-1},${c}`, `${r+1},${c}`,
-        `${r},${c-1}`, `${r},${c+1}`
-      ];
-      if (neighbours.some(n => fixedCells[n] === fruit)) continue;
-
-      fixedCells[key] = fruit;
-      placed++;
-    }
-  }
-
-  function solve(grid) {
-    function isValid(r, c, fruit) {
-      let rowCount = grid[r].filter(f => f === fruit).length;
-      let colCount = grid.map(row => row[c]).filter(f => f === fruit).length;
-      if (rowCount >= 2 || colCount >= 2) return false;
-
-      if (r > 0 && grid[r-1][c] === fruit) return false;
-      if (r < 7 && grid[r+1][c] === fruit) return false;
-      if (c > 0 && grid[r][c-1] === fruit) return false;
-      if (c < 7 && grid[r][c+1] === fruit) return false;
-
-      return true;
-    }
-
-    function backtrack(r, c) {
-      if (c === 8) {
-        c = 0; r++;
-        if (r === 8) return true;
-      }
-      if (grid[r][c] !== "") return backtrack(r, c+1);
-
-      for (let fruit of fruits.slice(1)) {
-        if (isValid(r, c, fruit)) {
-          grid[r][c] = fruit;
-          if (backtrack(r, c+1)) return true;
-          grid[r][c] = "";
+    // Check 2x2 Boxen
+    for(let boxR=0; boxR<size; boxR+=2) {
+      for(let boxC=0; boxC<size; boxC+=2) {
+        const boxSet = new Set();
+        for(let r=boxR; r<boxR+2; r++) {
+          for(let c=boxC; c<boxC+2; c++) {
+            const val = bd[r][c];
+            if(val !== 0) {
+              if(boxSet.has(val)) return false;
+              boxSet.add(val);
+            }
+          }
         }
+      }
+    }
+    return true;
+  }
+
+  // Backtracking: Löse Board (zur eindeutigen Lösung prüfen)
+  // Zählt Lösungen und bricht ab wenn >1 gefunden
+  function solveBoard(bd, limit = 2) {
+    let solutions = 0;
+
+    function backtrack(r=0,c=0) {
+      if (r === size) {
+        solutions++;
+        return solutions >= limit;
+      }
+      let nr = r, nc = c+1;
+      if (nc === size) { nr++; nc=0; }
+      if (bd[r][c] !== 0) return backtrack(nr,nc);
+      for (let f=1; f<=fruitCount; f++) {
+        bd[r][c] = f;
+        if(isValidBoard(bd)) {
+          if(backtrack(nr,nc)) return true;
+        }
+        bd[r][c] = 0;
       }
       return false;
     }
 
-    return backtrack(0,0);
+    backtrack();
+    return solutions;
   }
 
-  function resetGame() {
-    generateSolvablePuzzle();
-    createGrid();
+  // Generiere neue Lösung (vollständige Lösung)
+  function generateSolution() {
+    let bd = make2DArray(0);
+    function backtrack(r=0,c=0) {
+      if (r === size) return true;
+      let nr = r, nc = c+1;
+      if (nc === size) { nr++; nc=0; }
+      const fruitsShuffled = shuffleArray([...Array(fruitCount).keys()].map(i => i+1));
+      for (const f of fruitsShuffled) {
+        bd[r][c] = f;
+        if (isValidBoard(bd)) {
+          if(backtrack(nr,nc)) return true;
+        }
+        bd[r][c] = 0;
+      }
+      return false;
+    }
+    backtrack();
+    return bd;
   }
 
-  resetGame();
+  // Shuffle Hilfsfunktion
+  function shuffleArray(arr) {
+    for(let i=arr.length-1; i>0; i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]] = [arr[j],arr[i]];
+    }
+    return arr;
+  }
+
+  // Generiere Puzzle mit Vorgaben, garantiert eindeutige Lösung
+  function generatePuzzle() {
+    while(true) {
+      const solution = generateSolution();
+      // Erstelle Kopie, entferne zufällig Zellen bis nur maxPrefilled bleiben
+      let puzzle = solution.map(r => r.slice());
+      // Erzeuge Liste aller Zellen
+      let cells = [];
+      for(let r=0;r<size;r++) {
+        for(let c=0;c<size;c++) cells.push([r,c]);
+      }
+      cells = shuffleArray(cells);
+      // Entferne Zellen zufällig, bis nur maxPrefilled übrig
+      const toRemove = size*size - maxPrefilled;
+      for(let i=0; i<toRemove; i++) {
+        const [r,c] = cells[i];
+        puzzle[r][c] = 0;
+      }
+      // Prüfe eindeutige Lösung mit Backtracking
+      if (solveBoard(puzzle, 2) === 1) {
+        return {puzzle, solution};
+      }
+      // sonst nochmal neu probieren
+    }
+  }
+
+  // Event Handler für Klick auf Zelle (nur editable)
+  function onCellClick(e) {
+    const td = e.target;
+    if (!td.classList.contains("editable")) return;
+    const r = +td.dataset.r;
+    const c = +td.dataset.c;
+    // Rotieren durch 0..4 (leer + 4 Früchte)
+    let val = board[r][c];
+    val++;
+    if(val > fruitCount) val = 0;
+    board[r][c] = val;
+    td.textContent = fruits[val];
+  }
+
+  // Prüfe Lösung - alle Regeln + keine leeren Zellen
+  function checkSolution() {
+    // Prüfe keine leeren Zellen
+    for(let r=0;r<size;r++) {
+      for(let c=0;c<size;c++) {
+        if(board[r][c] === 0) {
+          alert("Bitte alle Felder ausfüllen (oder mit Obst belegen).");
+          return false;
+        }
+      }
+    }
+    if(isValidBoard(board)) {
+      alert("🎉 Herzlichen Glückwunsch! Die Lösung ist korrekt.");
+      return true;
+    } else {
+      alert("❌ Die Lösung ist leider nicht korrekt. Bitte nochmal prüfen.");
+      return false;
+    }
+  }
+
+  // Initialisierung
+  function init() {
+    const {puzzle, solution} = generatePuzzle();
+    board = puzzle.map(r => r.slice());
+    prefilled = puzzle.map(row => row.map(val => val !== 0));
+    renderBoard();
+  }
+
+  // Listener
+  boardEl.addEventListener("click", onCellClick);
+  checkBtn.addEventListener("click", checkSolution);
+  newBtn.addEventListener("click", init);
+
+  // Starte erstes Spiel
+  init();
+})();
 </script>
-
 </body>
 </html>
