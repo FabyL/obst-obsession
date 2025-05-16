@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Obst Obsession mit Schwierigkeitsgrad</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    table {
+      border-collapse: collapse;
+      margin: 20px auto;
+    }
+    td {
+      width: 60px;
+      height: 60px;
+      border: 1px solid #333;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 32px;
+      cursor: pointer;
+    }
+    .fixed {
+      background: #d0eaff;
+      cursor: default;
+    }
+    button, select {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🍎 Obst Obsession 🍇</h1>
+
+<label for="difficulty">Schwierigkeit:</label>
+<select id="difficulty" onchange="resetGame()">
+  <option value="16">Leicht</option>
+  <option value="12" selected>Mittel</option>
+  <option value="8">Schwer</option>
+</select>
+
+<table id="grid"></table>
+
+<button onclick="checkSolution()">✅ Lösung prüfen</button>
+<button onclick="resetGame()">🔄 Neues Spiel</button>
+
+<script>
+  const fruits = ["", "🍎", "🍌", "🍈", "🍇"];
+  let fixedCells = {};
+
+  function createGrid() {
+    const table = document.getElementById("grid");
+    table.innerHTML = "";
+    for (let r = 0; r < 8; r++) {
+      const row = table.insertRow();
+      for (let c = 0; c < 8; c++) {
+        const cell = row.insertCell();
+        const key = `${r},${c}`;
+        if (fixedCells[key]) {
+          cell.textContent = fixedCells[key];
+          cell.className = 'fixed';
+        } else {
+          cell.onclick = () => {
+            let current = fruits.indexOf(cell.textContent);
+            cell.textContent = fruits[(current + 1) % fruits.length];
+          };
+        }
+      }
+    }
+  }
+
+  function checkSolution() {
+    const table = document.getElementById("grid");
+    let valid = true;
+
+    for (let i = 0; i < 8; i++) {
+      let rowCounts = {};
+      let colCounts = {};
+
+      for (let j = 0; j < 8; j++) {
+        const rowFruit = table.rows[i].cells[j].textContent;
+        const colFruit = table.rows[j].cells[i].textContent;
+
+        rowCounts[rowFruit] = (rowCounts[rowFruit] || 0) + 1;
+        colCounts[colFruit] = (colCounts[colFruit] || 0) + 1;
+
+        if (j < 7) {
+          if (rowFruit !== "" && rowFruit === table.rows[i].cells[j+1].textContent) valid = false;
+          if (colFruit !== "" && colFruit === table.rows[j+1].cells[i].textContent) valid = false;
+        }
+      }
+
+      for (let fruit of fruits.slice(1)) {
+        if (rowCounts[fruit] !== 2 || colCounts[fruit] !== 2) valid = false;
+      }
+    }
+
+    alert(valid ? "✅ Alles korrekt!" : "❌ Noch Fehler drin!");
+  }
+
+  function generateSolvablePuzzle() {
+    let attempts = 0;
+    while (true) {
+      fixedCells = {};
+      attempts++;
+      placeRandomStartFields();
+      let grid = Array.from({ length: 8 }, () => Array(8).fill(""));
+
+      for (let key in fixedCells) {
+        const [r, c] = key.split(",").map(Number);
+        grid[r][c] = fixedCells[key];
+      }
+
+      if (solve(grid)) {
+        console.log(`Lösbares Puzzle nach ${attempts} Versuchen gefunden.`);
+        break;
+      }
+    }
+  }
+
+  function placeRandomStartFields() {
+    let placed = 0;
+    let difficulty = parseInt(document.getElementById("difficulty").value);
+    while (placed < difficulty) {
+      let r = Math.floor(Math.random() * 8);
+      let c = Math.floor(Math.random() * 8);
+      let key = `${r},${c}`;
+      if (fixedCells[key]) continue;
+
+      let fruit = fruits.slice(1)[Math.floor(Math.random() * 4)];
+      let neighbours = [
+        `${r-1},${c}`, `${r+1},${c}`,
+        `${r},${c-1}`, `${r},${c+1}`
+      ];
+      if (neighbours.some(n => fixedCells[n] === fruit)) continue;
+
+      fixedCells[key] = fruit;
+      placed++;
+    }
+  }
+
+  function solve(grid) {
+    function isValid(r, c, fruit) {
+      let rowCount = grid[r].filter(f => f === fruit).length;
+      let colCount = grid.map(row => row[c]).filter(f => f === fruit).length;
+      if (rowCount >= 2 || colCount >= 2) return false;
+
+      if (r > 0 && grid[r-1][c] === fruit) return false;
+      if (r < 7 && grid[r+1][c] === fruit) return false;
+      if (c > 0 && grid[r][c-1] === fruit) return false;
+      if (c < 7 && grid[r][c+1] === fruit) return false;
+
+      return true;
+    }
+
+    function backtrack(r, c) {
+      if (c === 8) {
+        c = 0; r++;
+        if (r === 8) return true;
+      }
+      if (grid[r][c] !== "") return backtrack(r, c+1);
+
+      for (let fruit of fruits.slice(1)) {
+        if (isValid(r, c, fruit)) {
+          grid[r][c] = fruit;
+          if (backtrack(r, c+1)) return true;
+          grid[r][c] = "";
+        }
+      }
+      return false;
+    }
+
+    return backtrack(0,0);
+  }
+
+  function resetGame() {
+    generateSolvablePuzzle();
+    createGrid();
+  }
+
+  resetGame();
+
+</script>
+
+</body>
+</html>
