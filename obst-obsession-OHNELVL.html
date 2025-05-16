@@ -21,14 +21,12 @@
       margin: 20px auto;
     }
     td {
-      width: 12vw;
-      height: 12vw;
-      max-width: 60px;
-      max-height: 60px;
+      width: 60px;
+      height: 60px;
       border: 1px solid #333;
       text-align: center;
       vertical-align: middle;
-      font-size: 2em;
+      font-size: 32px;
       cursor: pointer;
       background: #fff;
       transition: background 0.2s;
@@ -43,26 +41,27 @@
       font-size: 1em;
       cursor: pointer;
     }
-    @media (max-width: 600px) {
-      td {
-        width: 11vw;
-        height: 11vw;
-        font-size: 1.8em;
-      }
-      button {
-        font-size: 0.9em;
-        padding: 10px 18px;
-      }
-    }
     #victory {
       display: none;
       font-size: 2em;
       color: green;
       animation: pop 0.8s ease forwards;
+      margin-top: 15px;
     }
     @keyframes pop {
       0% { transform: scale(0.5); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
+    }
+    @media (max-width: 600px) {
+      td {
+        width: 45px;
+        height: 45px;
+        font-size: 26px;
+      }
+      button {
+        font-size: 0.9em;
+        padding: 10px 18px;
+      }
     }
   </style>
 </head>
@@ -107,16 +106,13 @@
   function checkSolution() {
     const table = document.getElementById("grid");
     let valid = true;
-
     for (let i = 0; i < 8; i++) {
       let rowCounts = {}, colCounts = {};
       for (let j = 0; j < 8; j++) {
         const rowFruit = table.rows[i].cells[j].textContent;
         const colFruit = table.rows[j].cells[i].textContent;
-
         rowCounts[rowFruit] = (rowCounts[rowFruit] || 0) + 1;
         colCounts[colFruit] = (colCounts[colFruit] || 0) + 1;
-
         if (j < 7) {
           if (rowFruit !== "" && rowFruit === table.rows[i].cells[j+1].textContent) valid = false;
           if (colFruit !== "" && colFruit === table.rows[j+1].cells[i].textContent) valid = false;
@@ -126,11 +122,10 @@
         if (rowCounts[fruit] !== 2 || colCounts[fruit] !== 2) valid = false;
       }
     }
-
     if (valid) {
       document.getElementById("victory").style.display = "block";
     } else {
-      alert("Falsch gemach 😭");
+      alert("❌ Noch Fehler drin!");
     }
   }
 
@@ -157,10 +152,7 @@
       let key = `${r},${c}`;
       if (fixedCells[key]) continue;
       let fruit = fruits.slice(1)[Math.floor(Math.random() * 4)];
-      let neighbours = [
-        `${r-1},${c}`, `${r+1},${c}`,
-        `${r},${c-1}`, `${r},${c+1}`
-      ];
+      let neighbours = [`${r-1},${c}`, `${r+1},${c}`, `${r},${c-1}`, `${r},${c+1}`];
       if (neighbours.some(n => fixedCells[n] === fruit)) continue;
       fixedCells[key] = fruit;
       placed++;
@@ -178,7 +170,6 @@
       if (c < 7 && grid[r][c+1] === fruit) return false;
       return true;
     }
-
     function backtrack(r, c) {
       if (c === 8) { c = 0; r++; if (r === 8) return true; }
       if (grid[r][c] !== "") return backtrack(r, c+1);
