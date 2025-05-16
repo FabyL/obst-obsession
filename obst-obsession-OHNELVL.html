@@ -2,233 +2,184 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Obst Obsession mit Schwierigkeitsgrad</title>
+  <title>🍎 Obst Obsession mit Proof Solver</title>
   <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      background: #f0f0f0;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      margin-bottom: 10px;
-    }
-    table {
-      border-collapse: collapse;
-      margin: 20px auto;
-    }
-    td {
-      width: 60px;
-      height: 60px;
-      border: 1px solid #333;
-      text-align: center;
-      vertical-align: middle;
-      font-size: 32px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    .fixed {
-      background: #d0eaff;
-      cursor: default;
-    }
-    button, select {
-      margin: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
-    }
-    #victory {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.7);
-      color: #fff;
-      font-size: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.5s;
-    }
-    #victory.show {
-      opacity: 1;
-      pointer-events: all;
-    }
+    body { font-family: sans-serif; text-align: center; background: #f0f0f0; padding: 20px; }
+    h1 { margin-bottom: 10px; }
+    table { border-collapse: collapse; margin: 20px auto; }
+    td { width: 60px; height: 60px; border: 1px solid #333; text-align: center; vertical-align: middle; font-size: 32px; cursor: pointer; transition: background 0.3s; }
+    .fixed { background: #d0eaff; cursor: default; }
+    button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+    #victory { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); color:#fff; font-size: 48px; display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+    #victory.show { opacity: 1; pointer-events: all; }
   </style>
 </head>
 <body>
 
 <h1>🍎 Obst Obsession 🍇</h1>
-
-<label for="difficulty">Schwierigkeit:</label>
-<select id="difficulty" onchange="resetGame()">
-  <option value="20">Leicht (20 Vorgaben)</option>
-  <option value="16" selected>Mittel (16 Vorgaben)</option>
-  <option value="12">Schwer (12 Vorgaben)</option>
-</select>
-
 <table id="grid"></table>
-
 <button onclick="checkSolution()">✅ Lösung prüfen</button>
 <button onclick="resetGame()">🔄 Neues Spiel</button>
-
+<button onclick="proofTest()">🧠 Proof-Test starten</button>
 <div id="victory">🎉 Du hast gewonnen! 🎉</div>
 
 <script>
-  const fruits = ["", "🍎", "🍌", "🍈", "🍇"];
-  let fixedCells = {};
+const fruits = ["", "🍎", "🍌", "🍈", "🍇"];
+let fixedCells = {};
 
-  function createGrid() {
-    const table = document.getElementById("grid");
-    table.innerHTML = "";
-    for (let r = 0; r < 8; r++) {
-      const row = table.insertRow();
-      for (let c = 0; c < 8; c++) {
-        const cell = row.insertCell();
-        const key = `${r},${c}`;
-        if (fixedCells[key]) {
-          cell.textContent = fixedCells[key];
-          cell.className = 'fixed';
-        } else {
-          cell.onclick = () => {
-            let current = fruits.indexOf(cell.textContent);
-            cell.textContent = fruits[(current + 1) % fruits.length];
-          };
-        }
+function createGrid() {
+  const table = document.getElementById("grid");
+  table.innerHTML = "";
+  for (let r = 0; r < 8; r++) {
+    const row = table.insertRow();
+    for (let c = 0; c < 8; c++) {
+      const cell = row.insertCell();
+      const key = `${r},${c}`;
+      if (fixedCells[key]) {
+        cell.textContent = fixedCells[key];
+        cell.className = 'fixed';
+      } else {
+        cell.onclick = () => {
+          let current = fruits.indexOf(cell.textContent);
+          cell.textContent = fruits[(current + 1) % fruits.length];
+        };
       }
     }
   }
+}
 
-  function checkSolution() {
-    const table = document.getElementById("grid");
-    let valid = true;
-
-    for (let i = 0; i < 8; i++) {
-      let rowCounts = {};
-      let colCounts = {};
-
-      for (let j = 0; j < 8; j++) {
-        const rowFruit = table.rows[i].cells[j].textContent;
-        const colFruit = table.rows[j].cells[i].textContent;
-
-        rowCounts[rowFruit] = (rowCounts[rowFruit] || 0) + 1;
-        colCounts[colFruit] = (colCounts[colFruit] || 0) + 1;
-
-        if (j < 7) {
-          if (rowFruit !== "" && rowFruit === table.rows[i].cells[j+1].textContent) valid = false;
-          if (colFruit !== "" && colFruit === table.rows[j+1].cells[i].textContent) valid = false;
-        }
-      }
-
-      for (let fruit of fruits.slice(1)) {
-        if (rowCounts[fruit] !== 2 || colCounts[fruit] !== 2) valid = false;
+function checkSolution() {
+  const table = document.getElementById("grid");
+  let valid = true;
+  for (let i = 0; i < 8; i++) {
+    let rowCounts = {}, colCounts = {};
+    for (let j = 0; j < 8; j++) {
+      const rowFruit = table.rows[i].cells[j].textContent;
+      const colFruit = table.rows[j].cells[i].textContent;
+      rowCounts[rowFruit] = (rowCounts[rowFruit] || 0) + 1;
+      colCounts[colFruit] = (colCounts[colFruit] || 0) + 1;
+      if (j < 7) {
+        if (rowFruit !== "" && rowFruit === table.rows[i].cells[j+1].textContent) valid = false;
+        if (colFruit !== "" && colFruit === table.rows[j+1].cells[i].textContent) valid = false;
       }
     }
-
-    if (valid) {
-      document.getElementById("victory").classList.add("show");
-      setTimeout(() => {
-        document.getElementById("victory").classList.remove("show");
-      }, 3000);
-    } else {
-      alert("❌ Falsch gemach 😭");
+    for (let fruit of fruits.slice(1)) {
+      if (rowCounts[fruit] !== 2 || colCounts[fruit] !== 2) valid = false;
     }
   }
-
-  function generateSolvablePuzzle() {
-    let attempts = 0;
-    while (true) {
-      fixedCells = {};
-      attempts++;
-      placeRandomStartFields();
-      let grid = Array.from({ length: 8 }, () => Array(8).fill(""));
-
-      for (let key in fixedCells) {
-        const [r, c] = key.split(",").map(Number);
-        grid[r][c] = fixedCells[key];
-      }
-
-      if (solve(grid)) {
-        console.log(`Lösbares Puzzle nach ${attempts} Versuchen gefunden.`);
-        break;
-      }
-    }
+  if (valid) {
+    document.getElementById("victory").classList.add("show");
+    setTimeout(() => document.getElementById("victory").classList.remove("show"), 3000);
+  } else {
+    alert("❌ Noch Fehler drin!");
   }
+}
 
-  function placeRandomStartFields() {
-    let placed = 0;
-    let difficulty = parseInt(document.getElementById("difficulty").value);
+function generateSolvablePuzzle() {
+  let attempts = 0;
+  while (true) {
+    fixedCells = {};
+    attempts++;
+    placeRandomStartFields();
     let grid = Array.from({ length: 8 }, () => Array(8).fill(""));
-
-    while (placed < difficulty) {
-      let r = Math.floor(Math.random() * 8);
-      let c = Math.floor(Math.random() * 8);
-      let key = `${r},${c}`;
-      if (fixedCells[key]) continue;
-
-      let possibleFruits = fruits.slice(1).filter(fruit => {
-        if ((r > 0 && grid[r-1][c] === fruit) ||
-            (r < 7 && grid[r+1][c] === fruit) ||
-            (c > 0 && grid[r][c-1] === fruit) ||
-            (c < 7 && grid[r][c+1] === fruit)) return false;
-        let rowCount = grid[r].filter(f => f === fruit).length;
-        let colCount = grid.map(row => row[c]).filter(f => f === fruit).length;
-        if (rowCount >= 2 || colCount >= 2) return false;
-        return true;
-      });
-
-      if (possibleFruits.length === 0) continue;
-
-      let fruit = possibleFruits[Math.floor(Math.random() * possibleFruits.length)];
-      fixedCells[key] = fruit;
-      grid[r][c] = fruit;
-      placed++;
+    for (let key in fixedCells) {
+      const [r, c] = key.split(",").map(Number);
+      grid[r][c] = fixedCells[key];
     }
+    if (solve(grid)) break;
   }
+}
 
-  function solve(grid) {
-    function isValid(r, c, fruit) {
+function placeRandomStartFields() {
+  let placed = 0, difficulty = 25;
+  let grid = Array.from({ length: 8 }, () => Array(8).fill(""));
+  while (placed < difficulty) {
+    let r = Math.floor(Math.random() * 8);
+    let c = Math.floor(Math.random() * 8);
+    let key = `${r},${c}`;
+    if (fixedCells[key]) continue;
+    let possibleFruits = fruits.slice(1).filter(fruit => {
+      if ((r>0 && grid[r-1][c] === fruit) || (r<7 && grid[r+1][c] === fruit) || (c>0 && grid[r][c-1] === fruit) || (c<7 && grid[r][c+1] === fruit)) return false;
       let rowCount = grid[r].filter(f => f === fruit).length;
       let colCount = grid.map(row => row[c]).filter(f => f === fruit).length;
       if (rowCount >= 2 || colCount >= 2) return false;
-      if (r > 0 && grid[r-1][c] === fruit) return false;
-      if (r < 7 && grid[r+1][c] === fruit) return false;
-      if (c > 0 && grid[r][c-1] === fruit) return false;
-      if (c < 7 && grid[r][c+1] === fruit) return false;
       return true;
-    }
+    });
+    if (possibleFruits.length === 0) continue;
+    let fruit = possibleFruits[Math.floor(Math.random() * possibleFruits.length)];
+    fixedCells[key] = fruit;
+    grid[r][c] = fruit;
+    placed++;
+  }
+}
 
-    function backtrack(r, c) {
-      if (c === 8) {
-        c = 0; r++;
-        if (r === 8) return true;
+function solve(grid) {
+  function isValid(r,c,fruit) {
+    let rowCount = grid[r].filter(f => f===fruit).length;
+    let colCount = grid.map(row => row[c]).filter(f=>f===fruit).length;
+    if (rowCount >=2 || colCount >=2) return false;
+    if (r>0 && grid[r-1][c]===fruit) return false;
+    if (r<7 && grid[r+1][c]===fruit) return false;
+    if (c>0 && grid[r][c-1]===fruit) return false;
+    if (c<7 && grid[r][c+1]===fruit) return false;
+    return true;
+  }
+  function backtrack(r,c){
+    if (c===8){c=0;r++;if(r===8)return true;}
+    if(grid[r][c]!=="")return backtrack(r,c+1);
+    for (let fruit of fruits.slice(1)){
+      if(isValid(r,c,fruit)){
+        grid[r][c]=fruit;
+        if(backtrack(r,c+1)) return true;
+        grid[r][c]="";
       }
-      if (grid[r][c] !== "") return backtrack(r, c+1);
+    }
+    return false;
+  }
+  return backtrack(0,0);
+}
 
-      for (let fruit of fruits.slice(1)) {
-        if (isValid(r, c, fruit)) {
-          grid[r][c] = fruit;
-          if (backtrack(r, c+1)) return true;
-          grid[r][c] = "";
+function proofTest() {
+  let grid = Array.from({ length: 8 }, () => Array(8).fill(""));
+  for (let key in fixedCells) {
+    const [r, c] = key.split(",").map(Number);
+    grid[r][c] = fixedCells[key];
+  }
+  let changed;
+  do {
+    changed = false;
+    for (let r=0; r<8; r++) {
+      for (let c=0; c<8; c++) {
+        if (grid[r][c] !== "") continue;
+        let options = fruits.slice(1).filter(fruit => {
+          let rowCount = grid[r].filter(f => f===fruit).length;
+          let colCount = grid.map(row => row[c]).filter(f=>f===fruit).length;
+          if (rowCount >=2 || colCount >=2) return false;
+          if (r>0 && grid[r-1][c]===fruit) return false;
+          if (r<7 && grid[r+1][c]===fruit) return false;
+          if (c>0 && grid[r][c-1]===fruit) return false;
+          if (c<7 && grid[r][c+1]===fruit) return false;
+          return true;
+        });
+        if (options.length === 1) {
+          grid[r][c] = options[0];
+          changed = true;
         }
       }
-      return false;
     }
+  } while (changed);
 
-    return backtrack(0,0);
-  }
+  let filled = grid.flat().filter(f=>f!=="").length;
+  if (filled === 64) alert("✅ Logisch vollständig lösbar!");
+  else alert("⚠️ Proof-Check: Lässt sich nicht komplett ohne Raten lösen.");
+}
 
-  function resetGame() {
-    generateSolvablePuzzle();
-    createGrid();
-  }
+function resetGame(){
+  generateSolvablePuzzle();
+  createGrid();
+}
 
-  resetGame();
-
+resetGame();
 </script>
 
 </body>
