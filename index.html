@@ -10,6 +10,9 @@
       background: #f0f0f0;
       margin: 0;
       padding: 20px;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
       user-select: none;
     }
     h1 {
@@ -27,6 +30,9 @@
       vertical-align: middle;
       font-size: 36px;
       cursor: pointer;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
       user-select: none;
     }
     .fixed {
@@ -80,7 +86,12 @@
       for (let c = 0; c < 8; c++) {
         const cell = row.insertCell();
         const key = `${r},${c}`;
-        cell.onmousedown = (e) => e.preventDefault(); // Markieren verhindern
+
+        // Markieren und Kontextmenü verhindern
+        cell.onmousedown = (e) => e.preventDefault();
+        cell.onselectstart = () => false;
+        cell.oncontextmenu = () => false;
+
         if (fixedCells[key]) {
           cell.textContent = fixedCells[key];
           cell.className = 'fixed';
@@ -147,7 +158,6 @@
       if (fixedCells[key]) continue;
 
       let fruit = fruits.slice(1)[Math.floor(Math.random() * 4)];
-
       let neighbours = [
         `${r-1},${c}`, `${r+1},${c}`,
         `${r},${c-1}`, `${r},${c+1}`
@@ -198,7 +208,6 @@
   }
 
   resetGame();
-
 </script>
 
 </body>
