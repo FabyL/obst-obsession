@@ -1,3 +1,248 @@
+<!-- <!-- <!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>🍎 Obst Obsession 🍇</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    h1 { margin-bottom: 10px; }
+    table {
+      border-collapse: collapse;
+      margin: 20px auto;
+    }
+    td {
+      width: 65px;
+      height: 65px;
+      border: 1px solid #333;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 36px;
+      cursor: pointer;
+    }
+    .fixed {
+      background: #d0eaff;
+      cursor: default;
+    }
+    button {
+      margin: 10px;
+      padding: 12px 24px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    #victory {
+      position: fixed;
+      top:0; left:0; width:100%; height:100%;
+      background: rgba(0,0,0,0.7);
+      color:#fff;
+      font-size: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+    #victory.show { opacity: 1; pointer-events: all; }
+    @media (max-width: 800px) {
+      td { width: 50px; height: 50px; font-size: 30px; }
+    }
+    @media (max-width: 500px) {
+      td { width: 50px; height: 50px; font-size: 26px; }
+      button { padding: 10px 20px; font-size: 16px; }
+      #victory { font-size: 2em; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>🍎 Obst Obsession 🍇</h1>
+
+<table id="grid"></table>
+
+<button onclick="checkSolution()">✅ Lösung prüfen</button>
+<button onclick="resetGame()">🔄 Neues Spiel</button>
+
+<div id="victory">🎉 Gut gemacht! 🎉</div>
+
+<script>
+  const fruits = ["", "🍎", "🍇", "🍌", "🍈"];
+  let fixedCells = {};
+
+  function createGrid() {
+    const table = document.getElementById("grid");
+    table.innerHTML = "";
+    for (let r = 0; r < 8; r++) {
+      const row = table.insertRow();
+      for (let c = 0; c < 8; c++) {
+        const cell = row.insertCell();
+        const key = `${r},${c}`;
+
+        cell.onmousedown = (e) => e.preventDefault();
+        cell.onselectstart = () => false;
+        cell.oncontextmenu = () => false;
+
+        if (fixedCells[key]) {
+          cell.textContent = fixedCells[key];
+          cell.className = 'fixed';
+        } else {
+          cell.onclick = () => {
+            let current = fruits.indexOf(cell.textContent);
+            cell.textContent = fruits[(current + 1) % fruits.length];
+          };
+        }
+      }
+    }
+  }
+
+  function checkSolution() {
+    const table = document.getElementById("grid");
+    let valid = true;
+    for (let i = 0; i < 8; i++) {
+      let rowCounts = {}, colCounts = {};
+      for (let j = 0; j < 8; j++) {
+        const rowFruit = table.rows[i].cells[j].textContent;
+        const colFruit = table.rows[j].cells[i].textContent;
+
+        rowCounts[rowFruit] = (rowCounts[rowFruit] || 0) + 1;
+        colCounts[colFruit] = (colCounts[colFruit] || 0) + 1;
+
+        if (j < 7) {
+          if (rowFruit !== "" && rowFruit === table.rows[i].cells[j+1].textContent) valid = false;
+          if (colFruit !== "" && colFruit === table.rows[j+1].cells[i].textContent) valid = false;
+        }
+      }
+      for (let fruit of fruits.slice(1)) {
+        if (rowCounts[fruit] !== 2 || colCounts[fruit] !== 2) valid = false;
+      }
+    }
+    if (valid) {
+      document.getElementById("victory").classList.add("show");
+      setTimeout(() => document.getElementById("victory").classList.remove("show"), 3000);
+    } else {
+      alert("❌ Noch Fehler drin!");
+    }
+  }
+
+  function solve(grid) {
+    function isValid(r, c, fruit) {
+      let rowCount = grid[r].filter(f => f === fruit).length;
+      let colCount = grid.map(row => row[c]).filter(f => f === fruit).length;
+      if (rowCount >= 2 || colCount >= 2) return false;
+      if (r > 0 && grid[r-1][c] === fruit) return false;
+      if (r < 7 && grid[r+1][c] === fruit) return false;
+      if (c > 0 && grid[r][c-1] === fruit) return false;
+      if (c < 7 && grid[r][c+1] === fruit) return false;
+      return true;
+    }
+
+    function backtrack(r, c) {
+      if (c === 8) { c = 0; r++; if (r === 8) return true; }
+      if (grid[r][c] !== "") return backtrack(r, c+1);
+
+      for (let fruit of fruits.slice(1)) {
+        if (isValid(r, c, fruit)) {
+          grid[r][c] = fruit;
+          if (backtrack(r, c+1)) return true;
+          grid[r][c] = "";
+        }
+      }
+      return false;
+    }
+    return backtrack(0,0);
+  }
+
+  function isTooClose(r, c, minDistance = 2) {
+  for (let key in fixedCells) {
+    const [fr, fc] = key.split(",").map(Number);
+    const distance = Math.abs(fr - r) + Math.abs(fc - c);
+    if (distance < minDistance) return true;
+  }
+  return false;
+}
+
+
+  function generateSolvablePuzzle() {
+    fixedCells = {};
+    let grid = Array.from({ length: 8 }, () => Array(8).fill(""));
+
+    let positions = [];
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        positions.push([r, c]);
+      }
+    }
+    positions.sort(() => Math.random() - 0.5);
+
+    let rowLimits = Array.from({ length: 8 }, () => 2 + Math.floor(Math.random() * 3));
+    let colLimits = Array.from({ length: 8 }, () => 2 + Math.floor(Math.random() * 3));
+
+    let placed = 0;
+    let maxHints = 32;
+
+    for (let [r, c] of positions) {
+  if (placed >= maxHints) break;
+  if (rowLimits[r] <= 0 || colLimits[c] <= 0) continue;
+  if (isTooClose(r, c, 2)) continue; // <- Verhindert Klumpung
+
+  let possibleFruits = fruits.slice(1).sort(() => Math.random() - 0.5);
+  for (let fruit of possibleFruits) {
+    if (isValidAt(grid, r, c, fruit)) {
+      grid[r][c] = fruit;
+      if (solve(JSON.parse(JSON.stringify(grid)))) {
+        fixedCells[`${r},${c}`] = fruit;
+        placed++;
+        rowLimits[r]--;
+        colLimits[c]--;
+        break;
+      }
+      grid[r][c] = "";
+    }
+  }
+}
+
+  }
+
+  function isValidAt(grid, r, c, fruit) {
+    let rowCount = grid[r].filter(f => f === fruit).length;
+    let colCount = grid.map(row => row[c]).filter(f => f === fruit).length;
+    if (rowCount >= 2 || colCount >= 2) return false;
+    if (r > 0 && grid[r-1][c] === fruit) return false;
+    if (r < 7 && grid[r+1][c] === fruit) return false;
+    if (c > 0 && grid[r][c-1] === fruit) return false;
+    if (c < 7 && grid[r][c+1] === fruit) return false;
+    return true;
+  }
+
+  function resetGame() {
+    document.getElementById("victory").classList.remove("show");
+    generateSolvablePuzzle();
+    createGrid();
+  }
+
+  resetGame();
+</script>
+
+</body>
+</html> -->
+
+
+
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -45,7 +290,15 @@
       font-size: 18px;
       cursor: pointer;
     }
-    #victory { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); color:#fff; font-size: 48px; display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+    #victory {
+      position: fixed; top:0; left:0;
+      width:100%; height:100%;
+      background: rgba(0,0,0,0.7);
+      color:#fff; font-size: 48px;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10; opacity: 0; pointer-events: none;
+      transition: opacity 0.5s;
+    }
     #victory.show { opacity: 1; pointer-events: all; }
     @media (max-width: 800px) {
       td {
@@ -56,14 +309,15 @@
     }
     @media (max-width: 500px) {
       td {
-        width: 42px;
-        height: 42px;
+        width: 50px;
+        height: 50px;
         font-size: 26px;
       }
       button {
         padding: 10px 20px;
         font-size: 16px;
       }
+      #victory { font-size: 2em; }
     }
   </style>
 </head>
@@ -160,7 +414,7 @@
 
   function placeRandomStartFields() {
     let placed = 0;
-    while (placed < 32) {
+    while (placed < 36) {
       let r = Math.floor(Math.random() * 8);
       let c = Math.floor(Math.random() * 8);
       let key = `${r},${c}`;
@@ -221,4 +475,4 @@
 </script>
 
 </body>
-</html>
+</html> -->
