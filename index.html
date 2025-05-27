@@ -84,6 +84,7 @@
 
 <button onclick="checkSolution()">✅ Lösung prüfen</button>
 <button onclick="resetGame()">🔄 Neues Spiel</button>
+<button onclick="giveInstructions()">ℹ️ Regeln</button>
 
 <div id="victory">🎉 Gut gemacht! 🎉</div>
 
@@ -224,6 +225,19 @@
     document.getElementById("victory").classList.remove("show");
     generateSolvablePuzzle();
     createGrid();
+  }
+
+  function giveInstructions() {
+    alert("🍎 Obst Obsession 🍇\n\n" +
+          "Ziel: Platziere die Früchte so, dass jede der vier Obstarten genau 2 mal in jeder Zeile und Spalte ist.\n" +
+          "\n" +
+          "Die gleiche Frucht darf nicht direkt nebeneinander in einer Zeile oder Spalte stehen\n" +
+          "\n" +
+          "- Klicke auf eine Zelle, um die Frucht zu ändern.\n" +
+          "\n" +
+          "- Es gibt immer eine Lösung für das Puzzle.\n\n" +
+          "\n" +
+          "Viel Spaß!");
   }
 
   resetGame();
