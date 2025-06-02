@@ -86,11 +86,17 @@
 <button onclick="resetGame()">🔄 Neues Spiel</button>
 <button onclick="giveInstructions()">ℹ️ Regeln</button>
 
+<p>🏆 Bestzeit: <span id="highscoreDisplay">–</span> Sekunden</p>
+
 <div id="victory">🎉 Gut gemacht! 🎉</div>
 
 <script>
   const fruits = ["", "🍎", "🍇", "🍌", "🍈"];
   let fixedCells = {};
+  let startTime = 0;
+  let highscore = loadHighscore();
+
+
 
   function createGrid() {
     const table = document.getElementById("grid");
@@ -119,35 +125,52 @@
     }
   }
 
-  function checkSolution() {
-    const table = document.getElementById("grid");
-    let valid = true;
+function checkSolution() {
+  const table = document.getElementById("grid");
+  let valid = true;
 
-    for (let i = 0; i < 8; i++) {
-      let rowCounts = {}, colCounts = {};
-      for (let j = 0; j < 8; j++) {
-        const rowFruit = table.rows[i].cells[j].textContent;
-        const colFruit = table.rows[j].cells[i].textContent;
+  for (let i = 0; i < 8; i++) {
+    let rowCounts = {}, colCounts = {};
+    for (let j = 0; j < 8; j++) {
+      const rowFruit = table.rows[i].cells[j].textContent;
+      const colFruit = table.rows[j].cells[i].textContent;
 
-        rowCounts[rowFruit] = (rowCounts[rowFruit] || 0) + 1;
-        colCounts[colFruit] = (colCounts[colFruit] || 0) + 1;
+      rowCounts[rowFruit] = (rowCounts[rowFruit] || 0) + 1;
+      colCounts[colFruit] = (colCounts[colFruit] || 0) + 1;
 
-        if (j < 7) {
-          if (rowFruit !== "" && rowFruit === table.rows[i].cells[j+1].textContent) valid = false;
-          if (colFruit !== "" && colFruit === table.rows[j+1].cells[i].textContent) valid = false;
-        }
-      }
-      for (let fruit of fruits.slice(1)) {
-        if (rowCounts[fruit] !== 2 || colCounts[fruit] !== 2) valid = false;
+      if (j < 7) {
+        if (rowFruit !== "" && rowFruit === table.rows[i].cells[j+1].textContent) valid = false;
+        if (colFruit !== "" && colFruit === table.rows[j+1].cells[i].textContent) valid = false;
       }
     }
-    if (valid) {
+    for (let fruit of fruits.slice(1)) {
+      if (rowCounts[fruit] !== 2 || colCounts[fruit] !== 2) valid = false;
+    }
+  }
+
+  if (valid) {
+    let elapsedTime = Date.now() - startTime;
+    let formatted = formatTime(elapsedTime);
+
+    if (highscore === null || elapsedTime < highscore) {
+  highscore = elapsedTime;
+  localStorage.setItem("obstHighscore", elapsedTime);
+  alert(`🎉 Gut gemacht!\nZeit: ${formatted} Sekunden (Neue Bestzeit!)`);
+  const display = document.getElementById("highscoreDisplay");
+  if (display) display.textContent = formatted;
+} else {
+  let bestSeconds = (highscore / 1000).toFixed(1);
+  alert(`🎉 Gut gemacht!\nZeit: ${formatted} Sekunden\nBestzeit: ${bestSeconds} Sekunden`);
+}
+    document.getElementById("highscoreDisplay").textContent = (highscore / 1000).toFixed(1);
+
     document.getElementById("victory").classList.add("show");
     setTimeout(() => document.getElementById("victory").classList.remove("show"), 3000);
   } else {
     alert("❌ Noch Fehler drin!");
   }
-  }
+}
+
 
   function generateSolvablePuzzle() {
     let attempts = 0;
@@ -222,10 +245,28 @@
   }
 
   function resetGame() {
-    document.getElementById("victory").classList.remove("show");
-    generateSolvablePuzzle();
-    createGrid();
+  document.getElementById("victory").classList.remove("show");
+  generateSolvablePuzzle();
+  createGrid();
+  startTime = Date.now(); // ⏱️ Timer starten
+}
+
+function loadHighscore() {
+  const saved = localStorage.getItem("obstHighscore");
+  if (saved !== null) {
+    const display = document.getElementById("highscoreDisplay");
+    if (display) display.textContent = (saved / 1000).toFixed(1);
+    return parseInt(saved);
   }
+  return null;
+}
+
+function formatTime(ms) {
+  const totalSeconds = ms / 1000;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = (totalSeconds % 60).toFixed(1).padStart(4, "0");
+  return `${minutes}:${seconds}`;
+}
 
   function giveInstructions() {
     alert("🍎 Obst Obsession 🍇\n\n" +
