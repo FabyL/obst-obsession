@@ -86,7 +86,7 @@
 <button onclick="resetGame()">🔄 Neues Spiel</button>
 <button onclick="giveInstructions()">ℹ️ Regeln</button>
 
-<p>🏆 Bestzeit: <span id="highscoreDisplay">–</span> Sekunden</p>
+<p>🏆 Bestzeit: <span id="highscoreDisplay">–</span>s</p>
 
 <div id="victory">🎉 Gut gemacht! 🎉</div>
 
@@ -162,7 +162,7 @@ function checkSolution() {
   let bestSeconds = (highscore / 1000).toFixed(1);
   alert(`🎉 Gut gemacht!\nZeit: ${formatted} Sekunden\nBestzeit: ${bestSeconds} Sekunden`);
 }
-    document.getElementById("highscoreDisplay").textContent = (highscore / 1000).toFixed(1);
+    document.getElementById("highscoreDisplay").textContent = formatTime(highscore);
 
     document.getElementById("victory").classList.add("show");
     setTimeout(() => document.getElementById("victory").classList.remove("show"), 3000);
@@ -255,11 +255,12 @@ function loadHighscore() {
   const saved = localStorage.getItem("obstHighscore");
   if (saved !== null) {
     const display = document.getElementById("highscoreDisplay");
-    if (display) display.textContent = (saved / 1000).toFixed(1);
+    if (display) display.textContent = formatTime(parseInt(saved));
     return parseInt(saved);
   }
   return null;
 }
+
 
 function formatTime(ms) {
   const totalSeconds = ms / 1000;
